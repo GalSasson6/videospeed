@@ -1,28 +1,27 @@
-// Message type constants
 const MessageTypes = {
   SET_SPEED: 'VSC_SET_SPEED',
   ADJUST_SPEED: 'VSC_ADJUST_SPEED',
   RESET_SPEED: 'VSC_RESET_SPEED',
+  SET_VOLUME: 'VSC_SET_VOLUME',
+  GET_VOLUME_STATE: 'VSC_GET_VOLUME_STATE',
   TOGGLE_DISPLAY: 'VSC_TOGGLE_DISPLAY',
 };
 
+const DEFAULT_VOLUME_LEVEL = 1;
+const MAX_VOLUME_LEVEL = 4;
+
 document.addEventListener('DOMContentLoaded', () => {
-  // Load settings and initialize speed controls
   loadSettingsAndInitialize();
 
-  // Settings button event listener
   document.querySelector('#config').addEventListener('click', () => {
     chrome.runtime.openOptionsPage();
   });
 
-  // Power button toggle event listener
   document.querySelector('#disable').addEventListener('click', function () {
-    // Toggle based on current state
     const isCurrentlyEnabled = !this.classList.contains('disabled');
     toggleEnabled(!isCurrentlyEnabled, settingsSavedReloadMessage);
   });
 
-  // Initialize enabled state
   chrome.storage.sync.get({ enabled: true }, (storage) => {
     toggleEnabledUI(storage.enabled);
   });
@@ -44,8 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function toggleEnabledUI(enabled) {
     const disableBtn = document.querySelector('#disable');
     disableBtn.classList.toggle('disabled', !enabled);
-
-    // Update tooltip
     disableBtn.title = enabled ? 'Disable Extension' : 'Enable Extension';
   }
 
@@ -54,23 +51,49 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function setStatusMessage(str) {
-    const status_element = document.querySelector('#status');
-    status_element.classList.toggle('hide', false);
-    status_element.innerText = str;
+    const statusElement = document.querySelector('#status');
+    statusElement.classList.toggle('hide', false);
+    statusElement.innerText = str;
   }
 
-  // Load settings and initialize UI
+  function sendActiveTabMessage(message, callback) {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (!tabs[0]) {
+        if (callback) {
+          callback(null);
+        }
+        return;
+      }
+
+      chrome.tabs.sendMessage(tabs[0].id, message, (response) => {
+        if (chrome.runtime.lastError) {
+          if (callback) {
+            callback(null);
+          }
+          return;
+        }
+
+        if (callback) {
+          callback(response);
+        }
+      });
+    });
+  }
+
   function loadSettingsAndInitialize() {
     chrome.storage.sync.get(null, (storage) => {
-      // Find the step values from keyBindings
       let slowerStep = 0.1;
       let fasterStep = 0.1;
-      let resetSpeed = 1.0;
+      let preferredSpeed = 1.0;
+      let softerStep = 0.1;
+      let louderStep = 0.1;
 
       if (storage.keyBindings && Array.isArray(storage.keyBindings)) {
         const slowerBinding = storage.keyBindings.find((kb) => kb.action === 'slower');
         const fasterBinding = storage.keyBindings.find((kb) => kb.action === 'faster');
         const fastBinding = storage.keyBindings.find((kb) => kb.action === 'fast');
+        const softerBinding = storage.keyBindings.find((kb) => kb.action === 'softer');
+        const louderBinding = storage.keyBindings.find((kb) => kb.action === 'louder');
 
         if (slowerBinding && typeof slowerBinding.value === 'number') {
           slowerStep = slowerBinding.value;
@@ -79,43 +102,81 @@ document.addEventListener('DOMContentLoaded', () => {
           fasterStep = fasterBinding.value;
         }
         if (fastBinding && typeof fastBinding.value === 'number') {
-          resetSpeed = fastBinding.value;
+          preferredSpeed = fastBinding.value;
+        }
+        if (softerBinding && typeof softerBinding.value === 'number') {
+          softerStep = softerBinding.value;
+        }
+        if (louderBinding && typeof louderBinding.value === 'number') {
+          louderStep = louderBinding.value;
         }
       }
 
-      // Update the UI with dynamic values
-      updateSpeedControlsUI(slowerStep, fasterStep, resetSpeed);
-
-      // Initialize event listeners
+      updateSpeedControlsUI(slowerStep, fasterStep, preferredSpeed);
+      updateVolumeControlsUI(softerStep, louderStep);
       initializeSpeedControls();
+      initializeVolumeControls();
+      loadActiveVolumeState();
     });
   }
 
-  function updateSpeedControlsUI(slowerStep, fasterStep, resetSpeed) {
-    // Update decrease button
+  function updateSpeedControlsUI(slowerStep, fasterStep, preferredSpeed) {
     const decreaseBtn = document.querySelector('#speed-decrease');
     if (decreaseBtn) {
       decreaseBtn.dataset.delta = -slowerStep;
       decreaseBtn.querySelector('span').textContent = `-${slowerStep}`;
     }
 
-    // Update increase button
     const increaseBtn = document.querySelector('#speed-increase');
     if (increaseBtn) {
       increaseBtn.dataset.delta = fasterStep;
       increaseBtn.querySelector('span').textContent = `+${fasterStep}`;
     }
 
-    // Update reset button
     const resetBtn = document.querySelector('#speed-reset');
     if (resetBtn) {
-      resetBtn.textContent = resetSpeed.toString();
+      resetBtn.textContent = preferredSpeed.toString();
     }
   }
 
-  // Speed Control Functions
+  function updateVolumeControlsUI(softerStep, louderStep) {
+    const slider = document.querySelector('#volume-range');
+    if (!slider) {
+      return;
+    }
+
+    const stepCandidates = [softerStep, louderStep].filter(
+      (value) => typeof value === 'number' && value > 0
+    );
+    const sliderStep = stepCandidates.length > 0 ? Math.min(...stepCandidates) : 0.1;
+
+    slider.step = sliderStep.toString();
+    syncVolumeUI(Number(slider.value || DEFAULT_VOLUME_LEVEL));
+  }
+
+  function syncVolumeUI(level) {
+    const slider = document.querySelector('#volume-range');
+    const valueLabel = document.querySelector('#volume-value');
+    if (!slider || !valueLabel) {
+      return;
+    }
+
+    const clampedLevel = Math.min(Math.max(level, 0), MAX_VOLUME_LEVEL);
+    slider.value = clampedLevel.toString();
+    valueLabel.textContent = `${Math.round(clampedLevel * 100)}%`;
+  }
+
+  function loadActiveVolumeState() {
+    sendActiveTabMessage({ type: MessageTypes.GET_VOLUME_STATE }, (response) => {
+      if (response && typeof response.level === 'number') {
+        syncVolumeUI(response.level);
+      } else {
+        syncVolumeUI(DEFAULT_VOLUME_LEVEL);
+      }
+    });
+  }
+
   function initializeSpeedControls() {
-    // Set up speed control button listeners
     document.querySelector('#speed-decrease').addEventListener('click', function () {
       const delta = parseFloat(this.dataset.delta);
       adjustSpeed(delta);
@@ -127,12 +188,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.querySelector('#speed-reset').addEventListener('click', function () {
-      // Set directly to preferred speed instead of toggling
       const preferredSpeed = parseFloat(this.textContent);
       setSpeed(preferredSpeed);
     });
 
-    // Set up preset button listeners
     document.querySelectorAll('.preset-btn').forEach((btn) => {
       btn.addEventListener('click', function () {
         const speed = parseFloat(this.dataset.speed);
@@ -141,25 +200,37 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function initializeVolumeControls() {
+    const slider = document.querySelector('#volume-range');
+    if (!slider) {
+      return;
+    }
+
+    slider.addEventListener('input', function () {
+      const level = parseFloat(this.value);
+      syncVolumeUI(level);
+      setVolume(level);
+    });
+  }
+
   function setSpeed(speed) {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          type: MessageTypes.SET_SPEED,
-          payload: { speed: speed },
-        });
-      }
+    sendActiveTabMessage({
+      type: MessageTypes.SET_SPEED,
+      payload: { speed: speed },
     });
   }
 
   function adjustSpeed(delta) {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          type: MessageTypes.ADJUST_SPEED,
-          payload: { delta: delta },
-        });
-      }
+    sendActiveTabMessage({
+      type: MessageTypes.ADJUST_SPEED,
+      payload: { delta: delta },
+    });
+  }
+
+  function setVolume(level) {
+    sendActiveTabMessage({
+      type: MessageTypes.SET_VOLUME,
+      payload: { level: level },
     });
   }
 });

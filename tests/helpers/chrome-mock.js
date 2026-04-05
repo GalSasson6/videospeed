@@ -13,7 +13,7 @@ const mockStorage = {
   controllerOpacity: 0.3,
   controllerButtonSize: 14,
   blacklist: 'www.instagram.com\nx.com',
-  logLevel: 1,
+  logLevel: 3,
 };
 
 // Track onChanged listeners so set() can fire them
@@ -140,7 +140,7 @@ export function resetMockStorage() {
     controllerOpacity: 0.3,
     controllerButtonSize: 14,
     blacklist: 'www.instagram.com\nx.com',
-    logLevel: 1,
+    logLevel: 3,
   });
   // Clear all onChanged listeners between tests
   onChangedListeners.length = 0;

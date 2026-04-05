@@ -217,6 +217,39 @@ body {
   margin-top: 8px;
 }
 
+.volume-section {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 12px;
+  background-color: var(--md-surface-container);
+}
+
+.volume-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.volume-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--md-on-surface);
+}
+
+.volume-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--md-primary);
+}
+
+.volume-range {
+  width: 100%;
+  accent-color: var(--md-primary);
+  cursor: pointer;
+}
+
 .preset-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

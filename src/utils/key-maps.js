@@ -11,10 +11,13 @@
  * these are the exact physical keys the extension has always used.
  */
 export const PREDEFINED_CODE_MAP = Object.freeze({
-  83: { code: 'KeyS', displayKey: 's' }, // slower
+  65: { code: 'KeyA', displayKey: 'a' }, // slower (current default)
+  83: { code: 'KeyS', displayKey: 's' }, // slower (legacy default)
   68: { code: 'KeyD', displayKey: 'd' }, // faster
-  90: { code: 'KeyZ', displayKey: 'z' }, // rewind
-  88: { code: 'KeyX', displayKey: 'x' }, // advance
+  81: { code: 'KeyQ', displayKey: 'q' }, // rewind (current default)
+  90: { code: 'KeyZ', displayKey: 'z' }, // rewind (legacy default)
+  69: { code: 'KeyE', displayKey: 'e' }, // advance (current default)
+  88: { code: 'KeyX', displayKey: 'x' }, // advance (legacy default)
   82: { code: 'KeyR', displayKey: 'r' }, // reset
   71: { code: 'KeyG', displayKey: 'g' }, // fast
   86: { code: 'KeyV', displayKey: 'v' }, // display
@@ -221,16 +224,73 @@ export const PREDEFINED_ACTIONS = [
  * migration Phase 4 (background.js), and restore_defaults (options.js).
  */
 export const DEFAULT_BINDINGS = Object.freeze({
-  slower: { code: 'KeyS', key: 83, keyCode: 83, displayKey: 's', value: 0.1 },
+  slower: { code: 'KeyA', key: 65, keyCode: 65, displayKey: 'a', value: 0.1 },
   faster: { code: 'KeyD', key: 68, keyCode: 68, displayKey: 'd', value: 0.1 },
-  rewind: { code: 'KeyZ', key: 90, keyCode: 90, displayKey: 'z', value: 10 },
-  advance: { code: 'KeyX', key: 88, keyCode: 88, displayKey: 'x', value: 10 },
+  rewind: { code: 'KeyQ', key: 81, keyCode: 81, displayKey: 'q', value: 10 },
+  advance: { code: 'KeyE', key: 69, keyCode: 69, displayKey: 'e', value: 10 },
   reset: { code: 'KeyR', key: 82, keyCode: 82, displayKey: 'r', value: 1.0 },
-  fast: { code: 'KeyG', key: 71, keyCode: 71, displayKey: 'g', value: 1.8 },
+  fast: { code: 'KeyG', key: 71, keyCode: 71, displayKey: 'g', value: 2.0 },
   display: { code: 'KeyV', key: 86, keyCode: 86, displayKey: 'v', value: 0 },
   mark: { code: 'KeyM', key: 77, keyCode: 77, displayKey: 'm', value: 0 },
   jump: { code: 'KeyJ', key: 74, keyCode: 74, displayKey: 'j', value: 0 },
 });
+
+export const DEFAULT_CUSTOM_BINDINGS = Object.freeze([
+  {
+    action: 'louder',
+    code: 'KeyW',
+    key: 87,
+    keyCode: 87,
+    displayKey: 'w',
+    value: 0.1,
+    predefined: false,
+  },
+  {
+    action: 'softer',
+    code: 'KeyS',
+    key: 83,
+    keyCode: 83,
+    displayKey: 's',
+    value: 0.1,
+    predefined: false,
+  },
+  {
+    action: 'advance',
+    code: 'KeyT',
+    key: 84,
+    keyCode: 84,
+    displayKey: 't',
+    value: 600,
+    predefined: false,
+  },
+  {
+    action: 'faster',
+    code: 'KeyH',
+    key: 72,
+    keyCode: 72,
+    displayKey: 'h',
+    value: 0.1,
+    predefined: false,
+  },
+  {
+    action: 'advance',
+    code: 'KeyI',
+    key: 73,
+    keyCode: 73,
+    displayKey: 'i',
+    value: 0.3,
+    predefined: false,
+  },
+  {
+    action: 'rewind',
+    code: 'KeyU',
+    key: 85,
+    keyCode: 85,
+    displayKey: 'u',
+    value: 0.3,
+    predefined: false,
+  },
+]);
 
 /** event.code values that must not be recorded as shortcuts. */
 export const BLACKLISTED_CODES = new Set([

@@ -20,12 +20,12 @@ const PREDEFINED_ACTIONS = () => Constants().PREDEFINED_ACTIONS;
 const displayKeyFromCode = (...args) => Constants().displayKeyFromCode(...args);
 
 const DEFAULT_V2_BINDINGS = {
-  slower: { code: 'KeyS', key: 83, keyCode: 83, displayKey: 's', value: 0.1, force: false },
+  slower: { code: 'KeyA', key: 65, keyCode: 65, displayKey: 'a', value: 0.1, force: false },
   faster: { code: 'KeyD', key: 68, keyCode: 68, displayKey: 'd', value: 0.1, force: false },
-  rewind: { code: 'KeyZ', key: 90, keyCode: 90, displayKey: 'z', value: 10, force: false },
-  advance: { code: 'KeyX', key: 88, keyCode: 88, displayKey: 'x', value: 10, force: false },
+  rewind: { code: 'KeyQ', key: 81, keyCode: 81, displayKey: 'q', value: 10, force: false },
+  advance: { code: 'KeyE', key: 69, keyCode: 69, displayKey: 'e', value: 10, force: false },
   reset: { code: 'KeyR', key: 82, keyCode: 82, displayKey: 'r', value: 1.0, force: false },
-  fast: { code: 'KeyG', key: 71, keyCode: 71, displayKey: 'g', value: 1.8, force: false },
+  fast: { code: 'KeyG', key: 71, keyCode: 71, displayKey: 'g', value: 2.0, force: false },
   display: { code: 'KeyV', key: 86, keyCode: 86, displayKey: 'v', value: 0, force: false },
   mark: { code: 'KeyM', key: 77, keyCode: 77, displayKey: 'm', value: 0, force: false },
   jump: { code: 'KeyJ', key: 74, keyCode: 74, displayKey: 'j', value: 0, force: false },

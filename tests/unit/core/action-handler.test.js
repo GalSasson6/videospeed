@@ -57,6 +57,44 @@ describe('ActionHandler', () => {
     return mockVideo;
   }
 
+  function installAudioContextMock() {
+    const originalAudioContext = globalThis.AudioContext;
+
+    class MockAudioContext {
+      constructor() {
+        this.destination = {};
+        this.state = 'running';
+      }
+
+      createMediaElementSource() {
+        return {
+          connect: () => {},
+        };
+      }
+
+      createGain() {
+        return {
+          gain: { value: 1 },
+          connect: () => {},
+        };
+      }
+
+      resume() {
+        return Promise.resolve();
+      }
+    }
+
+    globalThis.AudioContext = MockAudioContext;
+
+    return () => {
+      if (originalAudioContext) {
+        globalThis.AudioContext = originalAudioContext;
+      } else {
+        delete globalThis.AudioContext;
+      }
+    };
+  }
+
   afterEach(() => {
     cleanupChromeMock();
     if (mockDOM) {
@@ -166,6 +204,56 @@ describe('ActionHandler', () => {
 
     actionHandler.runAction('softer', 0.2);
     expect(mockVideo.volume).toBe(0.4);
+  });
+
+  it('ActionHandler should boost volume above the native 100% cap', async () => {
+    const restoreAudioContext = installAudioContextMock();
+
+    try {
+      const config = window.VSC.videoSpeedConfig;
+      await config.load();
+
+      const eventManager = new window.VSC.EventManager(config, null);
+      const actionHandler = new window.VSC.ActionHandler(config, eventManager);
+
+      const mockVideo = createTestVideoWithController(config, actionHandler, { volume: 0.9 });
+      actionHandler.runAction('louder', 0.4);
+
+      expect(mockVideo.volume).toBe(1);
+      expect(actionHandler.getVolumeLevel(mockVideo)).toBe(1.3);
+
+      actionHandler.runAction('softer', 0.5);
+      expect(mockVideo.volume).toBe(0.8);
+      expect(actionHandler.getVolumeLevel(mockVideo)).toBe(0.8);
+    } finally {
+      restoreAudioContext();
+    }
+  });
+
+  it('volume shortcuts should briefly show the current volume percentage', async () => {
+    const restoreAudioContext = installAudioContextMock();
+
+    try {
+      const config = window.VSC.videoSpeedConfig;
+      await config.load();
+
+      const eventManager = new window.VSC.EventManager(config, null);
+      const actionHandler = new window.VSC.ActionHandler(config, eventManager);
+
+      const mockVideo = createTestVideoWithController(config, actionHandler, { volume: 0.5 });
+      mockVideo.playbackRate = 1.25;
+      const originalIndicatorText = mockVideo.vsc.speedIndicator.textContent;
+
+      actionHandler.runAction('louder', 0.1);
+      expect(mockVideo.vsc.feedbackIndicator.textContent).toBe('60%');
+      expect(mockVideo.vsc.div.classList.contains('vsc-feedback-show')).toBe(true);
+
+      await new Promise((resolve) => setTimeout(resolve, 1250));
+      expect(mockVideo.vsc.div.classList.contains('vsc-feedback-show')).toBe(false);
+      expect(mockVideo.vsc.speedIndicator.textContent).toBe(originalIndicatorText);
+    } finally {
+      restoreAudioContext();
+    }
   });
 
   it('ActionHandler should handle seek actions', async () => {
@@ -830,8 +918,8 @@ describe('ActionHandler', () => {
     video.vsc.speedBeforeReset = null;
 
     // Reset at 1.0x with no memory → should cross-toggle to preferred speed (1.8)
-    actionHandler.resetSpeed(video, 1.0, 1.8);
-    expect(video.playbackRate).toBe(1.8);
+    actionHandler.resetSpeed(video, 1.0, 2.0);
+    expect(video.playbackRate).toBe(2.0);
     expect(video.vsc.speedBeforeReset).toBe(1.0);
   });
 
@@ -842,13 +930,13 @@ describe('ActionHandler', () => {
     const eventManager = new window.VSC.EventManager(config, null);
     const actionHandler = new window.VSC.ActionHandler(config, eventManager);
 
-    const video = createTestVideoWithController(config, actionHandler, { playbackRate: 1.8 });
+    const video = createTestVideoWithController(config, actionHandler, { playbackRate: 2.0 });
     video.vsc.speedBeforeReset = null;
 
     // Preferred at 1.8x with no memory → should cross-toggle to reset speed (1.0)
-    actionHandler.resetSpeed(video, 1.8, 1.0);
+    actionHandler.resetSpeed(video, 2.0, 1.0);
     expect(video.playbackRate).toBe(1.0);
-    expect(video.vsc.speedBeforeReset).toBe(1.8);
+    expect(video.vsc.speedBeforeReset).toBe(2.0);
   });
 
   it('cross-toggle should not fire when crossTarget equals target', async () => {
@@ -878,7 +966,7 @@ describe('ActionHandler', () => {
     video.vsc.speedBeforeReset = 2.5;
 
     // At target with memory → should restore, not cross-toggle
-    actionHandler.resetSpeed(video, 1.0, 1.8);
+    actionHandler.resetSpeed(video, 1.0, 2.0);
     expect(video.playbackRate).toBe(2.5);
     expect(video.vsc.speedBeforeReset).toBe(null);
   });
@@ -894,19 +982,19 @@ describe('ActionHandler', () => {
     video.vsc.speedBeforeReset = null;
 
     // Press 1: at 1.0 with no memory → cross-toggle to 1.8
-    actionHandler.resetSpeed(video, 1.0, 1.8);
-    expect(video.playbackRate).toBe(1.8);
+    actionHandler.resetSpeed(video, 1.0, 2.0);
+    expect(video.playbackRate).toBe(2.0);
 
     // Press 2: at 1.8, not at target (1.0) → remember 1.8, go to 1.0
-    actionHandler.resetSpeed(video, 1.0, 1.8);
+    actionHandler.resetSpeed(video, 1.0, 2.0);
     expect(video.playbackRate).toBe(1.0);
 
     // Press 3: at 1.0 with memory (1.8) → restore to 1.8
-    actionHandler.resetSpeed(video, 1.0, 1.8);
-    expect(video.playbackRate).toBe(1.8);
+    actionHandler.resetSpeed(video, 1.0, 2.0);
+    expect(video.playbackRate).toBe(2.0);
 
     // Press 4: at 1.8, not at target (1.0) → remember 1.8, go to 1.0
-    actionHandler.resetSpeed(video, 1.0, 1.8);
+    actionHandler.resetSpeed(video, 1.0, 2.0);
     expect(video.playbackRate).toBe(1.0);
   });
 
@@ -916,7 +1004,7 @@ describe('ActionHandler', () => {
 
     // Ensure default bindings are in effect
     config.setKeyBinding('reset', 1.0);
-    config.setKeyBinding('fast', 1.8);
+    config.setKeyBinding('fast', 2.0);
 
     const eventManager = new window.VSC.EventManager(config, null);
     const actionHandler = new window.VSC.ActionHandler(config, eventManager);
@@ -926,7 +1014,7 @@ describe('ActionHandler', () => {
 
     // runAction('reset', 1.0) should cross-toggle to preferred (1.8) via config lookup
     actionHandler.runAction('reset', 1.0);
-    expect(video.playbackRate).toBe(1.8);
+    expect(video.playbackRate).toBe(2.0);
 
     // Reset back
     actionHandler.runAction('reset', 1.0);
@@ -942,18 +1030,18 @@ describe('ActionHandler', () => {
 
     // Ensure default bindings are in effect
     config.setKeyBinding('reset', 1.0);
-    config.setKeyBinding('fast', 1.8);
+    config.setKeyBinding('fast', 2.0);
 
-    const video = createTestVideoWithController(config, actionHandler, { playbackRate: 1.8 });
+    const video = createTestVideoWithController(config, actionHandler, { playbackRate: 2.0 });
     video.vsc.speedBeforeReset = null;
 
     // runAction('fast', 1.8) should cross-toggle to reset (1.0)
-    actionHandler.runAction('fast', 1.8);
+    actionHandler.runAction('fast', 2.0);
     expect(video.playbackRate).toBe(1.0);
 
     // Fast back
-    actionHandler.runAction('fast', 1.8);
-    expect(video.playbackRate).toBe(1.8);
+    actionHandler.runAction('fast', 2.0);
+    expect(video.playbackRate).toBe(2.0);
   });
 
   it('cross-toggle with custom reset and preferred speeds', async () => {

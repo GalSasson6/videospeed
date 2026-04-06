@@ -13,7 +13,7 @@ const mockStorage = {
   controllerOpacity: 0.3,
   controllerButtonSize: 14,
   blacklist: 'www.instagram.com\nx.com',
-  logLevel: 3,
+  logLevel: 1,
 };
 
 // Track onChanged listeners so set() can fire them

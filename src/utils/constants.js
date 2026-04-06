@@ -30,7 +30,7 @@ if (!window.VSC.Constants.DEFAULT_SETTINGS) {
   window.VSC.Constants.DEFAULT_CONTROLLER_CSS = DEFAULT_CONTROLLER_CSS;
 
   const DEFAULT_SETTINGS = {
-    schemaVersion: 2,
+    schemaVersion: 1,
     lastSpeed: 1.0, // default 1x
     enabled: true, // default enabled
     rememberSpeed: false, // default: false

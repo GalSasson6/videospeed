@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Find the step values from keyBindings
       let slowerStep = 0.1;
       let fasterStep = 0.1;
-      let preferredSpeed = 1.0;
+      let resetSpeed = 1.0;
       let softerStep = 0.1;
       let louderStep = 0.1;
 
@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
           fasterStep = fasterBinding.value;
         }
         if (fastBinding && typeof fastBinding.value === 'number') {
-          preferredSpeed = fastBinding.value;
+          resetSpeed = fastBinding.value;
         }
         if (softerBinding && typeof softerBinding.value === 'number') {
           softerStep = softerBinding.value;
@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Update the UI with dynamic values
-      updateSpeedControlsUI(slowerStep, fasterStep, preferredSpeed);
+      updateSpeedControlsUI(slowerStep, fasterStep, resetSpeed);
       updateVolumeControlsUI(softerStep, louderStep);
 
       // Initialize event listeners
@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function updateSpeedControlsUI(slowerStep, fasterStep, preferredSpeed) {
+  function updateSpeedControlsUI(slowerStep, fasterStep, resetSpeed) {
     // Update decrease button
     const decreaseBtn = document.querySelector('#speed-decrease');
     if (decreaseBtn) {
@@ -151,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update reset button
     const resetBtn = document.querySelector('#speed-reset');
     if (resetBtn) {
-      resetBtn.textContent = preferredSpeed.toString();
+      resetBtn.textContent = resetSpeed.toString();
     }
   }
 
@@ -206,9 +206,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.querySelector('#speed-reset').addEventListener('click', function () {
-      // Set directly to preferred speed instead of toggling
-      const preferredSpeed = parseFloat(this.textContent);
-      setSpeed(preferredSpeed);
+      // Set directly to reset speed instead of toggling
+      const resetSpeed = parseFloat(this.textContent);
+      setSpeed(resetSpeed);
     });
 
     // Set up preset button listeners

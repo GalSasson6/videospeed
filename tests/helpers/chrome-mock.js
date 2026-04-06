@@ -140,7 +140,7 @@ export function resetMockStorage() {
     controllerOpacity: 0.3,
     controllerButtonSize: 14,
     blacklist: 'www.instagram.com\nx.com',
-    logLevel: 3,
+    logLevel: 1,
   });
   // Clear all onChanged listeners between tests
   onChangedListeners.length = 0;
